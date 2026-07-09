@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kielsync"
+version = "0.1.0.dev0"
+description = "Payment orchestration and reconciliation for Paystack & Flutterwave"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Ezekiel Ogunkunle", email = "ezekiel.ogunkunle@yahoo.com" }]
+requires-python = ">=3.12"
+classifiers = [
+    "Framework :: Django",
+    "Framework :: Django :: 5.0",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "Django>=5.0,<6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "psycopg[binary]>=3.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py"]
