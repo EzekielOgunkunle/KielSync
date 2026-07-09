@@ -45,7 +45,7 @@ class Transaction(models.Model):
         app_label = "kielsync"
         constraints = [
             models.CheckConstraint(
-                check=models.Q(amount__gt=0),
+                condition=models.Q(amount__gt=0),
                 name="kielsync_transaction_amount_positive",
             ),
         ]
