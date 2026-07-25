@@ -1,0 +1,19 @@
+{
+  "name": "event_id_falls_back_to_reference",
+  "description": "Paystack sends no delivery identifier, so KielSync derives one from the event name and the transaction id. When the payload carries no id, the reference is used instead.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"transfer.success\",\"data\":{\"status\":\"success\",\"reference\":\"kiel_tr_0009\",\"amount\":750000,\"currency\":\"NGN\"}}",
+  "headers": {
+    "x-paystack-signature": "3836e7226712fbb64828f6ecc90778c609c6e74001f154d5545c6683080c25b5034fcc1af10291c8c1574b0ff3c40e929758adda5eef275a02df008b70010365"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "transfer.success:kiel_tr_0009",
+    "event_type": "transfer.success",
+    "gateway_reference": "kiel_tr_0009",
+    "status": "SUCCESS",
+    "amount": 750000,
+    "currency": "NGN"
+  }
+}

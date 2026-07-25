@@ -1,0 +1,19 @@
+{
+  "name": "unknown_status_maps_to_pending",
+  "description": "A status word the adapter does not recognise must never be reported as SUCCESS or FAILED. Paystack adds states over time and neither 'the money arrived' nor 'it never will' may be invented.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"charge.success\",\"data\":{\"id\":302970,\"status\":\"quantum_superposition\",\"reference\":\"kiel_txn_0010\",\"amount\":100,\"currency\":\"GHS\"}}",
+  "headers": {
+    "x-paystack-signature": "e65f3ed49f9b2f2cdecc258df566e8f8dda2de550d8d6fa85aae04347a512407d701838e888d567fb461209219e0861a3b426d4228c0b9af21e8b32c61097c10"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "charge.success:302970",
+    "event_type": "charge.success",
+    "gateway_reference": "kiel_txn_0010",
+    "status": "PENDING",
+    "amount": 100,
+    "currency": "GHS"
+  }
+}

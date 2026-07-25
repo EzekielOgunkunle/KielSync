@@ -1,0 +1,13 @@
+{
+  "name": "signed_body_json_array",
+  "description": "Valid JSON, but not an object. Same treatment as unparseable: authentic sender, malformed delivery.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "[\"charge.success\"]",
+  "headers": {
+    "x-paystack-signature": "22b1dd69b02b1040b256c2f9c9de5a33cf692c8ba310ba5c47097368a2ce8126e1fdbcc695b1f1fcc36e4fc7b4d877a55ea697667b7ac4e98b0109b273e9a0f6"
+  },
+  "expected": {
+    "raises": "TerminalGatewayError"
+  }
+}

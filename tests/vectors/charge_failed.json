@@ -1,0 +1,19 @@
+{
+  "name": "charge_failed",
+  "description": "A declined charge. The delivery is authentic, so signature_valid is true; the payment itself failed.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"charge.failed\",\"data\":{\"id\":302962,\"status\":\"failed\",\"reference\":\"kiel_txn_0002\",\"amount\":500000,\"currency\":\"NGN\",\"gateway_response\":\"Insufficient Funds\",\"paid_at\":null,\"channel\":\"card\"}}",
+  "headers": {
+    "x-paystack-signature": "a4d60e1ad5731ba375c6c2ebc8383c07d09b38de621e6fc01bb1017cab3442aa597e93b03f34e6329e40894c64de3c213b27be6d441b68f50faabd8de30a6d0b"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "charge.failed:302962",
+    "event_type": "charge.failed",
+    "gateway_reference": "kiel_txn_0002",
+    "status": "FAILED",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

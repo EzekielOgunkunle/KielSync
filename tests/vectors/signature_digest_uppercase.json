@@ -1,0 +1,19 @@
+{
+  "name": "signature_digest_uppercase",
+  "description": "The digest is hex, so an uppercase transmission of the same value is the same signature.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"charge.success\",\"data\":{\"id\":302961,\"domain\":\"test\",\"status\":\"success\",\"reference\":\"kiel_txn_0001\",\"amount\":500000,\"currency\":\"NGN\",\"gateway_response\":\"Successful\",\"paid_at\":\"2026-07-25T10:15:32.000Z\",\"channel\":\"card\",\"customer\":{\"email\":\"payer@example.com\",\"customer_code\":\"CUS_x1\"},\"authorization\":{\"authorization_code\":\"AUTH_conformance\",\"bin\":\"408408\",\"last4\":\"4081\",\"exp_month\":\"12\",\"exp_year\":\"2030\",\"card_type\":\"visa\",\"bank\":\"TEST BANK\"}}}",
+  "headers": {
+    "x-paystack-signature": "E3F56CAB13156D00037024C296B6143E8A0B41AB63ADB56428A876D355D82943B42E60A8A81F95E66781317E883515E7FE18E9366CE9E1A3E24D7A0B7426D6A5"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "charge.success:302961",
+    "event_type": "charge.success",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

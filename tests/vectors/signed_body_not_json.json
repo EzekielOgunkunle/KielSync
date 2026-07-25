@@ -1,0 +1,13 @@
+{
+  "name": "signed_body_not_json",
+  "description": "The signature verifies, so the sender is authentic, but the body is not JSON. That is a malformed delivery from a trusted sender, which is an error rather than a rejection.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "charge.success but not JSON at all",
+  "headers": {
+    "x-paystack-signature": "2600e2eec9dd93327b57d52d171dd32846c67d22af8b494096f69082b5a935c15d55a8b190d286cd0f7928a7cc55c305fa250ff4b0f675b5524f4d07ebac78c5"
+  },
+  "expected": {
+    "raises": "TerminalGatewayError"
+  }
+}

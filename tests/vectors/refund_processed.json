@@ -1,0 +1,19 @@
+{
+  "name": "refund_processed",
+  "description": "Refund events reuse the status field with a different vocabulary: a completed refund says 'processed' where a charge says 'success'. The event name selects the status table, so this reports SUCCESS.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"refund.processed\",\"data\":{\"id\":41001,\"status\":\"processed\",\"reference\":\"kiel_txn_0001\",\"amount\":500000,\"currency\":\"NGN\",\"transaction_reference\":\"kiel_txn_0001\"}}",
+  "headers": {
+    "x-paystack-signature": "3d77069c1610cb742d59e4750af56ac30ab3a83ca1d42ed52710147ddc052721020a80a3b9b13eb3ed8867b63ef05a16d18f95a151cd0d63847bb15279e9e734"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "refund.processed:41001",
+    "event_type": "refund.processed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

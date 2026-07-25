@@ -1,0 +1,19 @@
+{
+  "name": "charge_abandoned_maps_to_pending",
+  "description": "Paystack marks a checkout abandoned as soon as the payer leaves, but the authorization URL stays live and the payment can still arrive. The adapter reports PENDING rather than FAILED and leaves the decision to give up to the caller, which knows the transaction age.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"charge.abandoned\",\"data\":{\"id\":302963,\"status\":\"abandoned\",\"reference\":\"kiel_txn_0003\",\"amount\":250000,\"currency\":\"NGN\",\"gateway_response\":\"Abandoned\"}}",
+  "headers": {
+    "x-paystack-signature": "f3e049810012333d039bc3eb6fafe4c33cc2ce81a8ae4dbddc54db572c45d601a5ea6fd51a33de8f63da7e563d220f5a4814dccb39b286b53d5c1ebfd9f6536b"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "charge.abandoned:302963",
+    "event_type": "charge.abandoned",
+    "gateway_reference": "kiel_txn_0003",
+    "status": "PENDING",
+    "amount": 250000,
+    "currency": "NGN"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "wrong_signature",
+  "description": "A well-formed digest of the correct length that is simply not the right one.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"charge.success\",\"data\":{\"id\":302961,\"domain\":\"test\",\"status\":\"success\",\"reference\":\"kiel_txn_0001\",\"amount\":500000,\"currency\":\"NGN\",\"gateway_response\":\"Successful\",\"paid_at\":\"2026-07-25T10:15:32.000Z\",\"channel\":\"card\",\"customer\":{\"email\":\"payer@example.com\",\"customer_code\":\"CUS_x1\"},\"authorization\":{\"authorization_code\":\"AUTH_conformance\",\"bin\":\"408408\",\"last4\":\"4081\",\"exp_month\":\"12\",\"exp_year\":\"2030\",\"card_type\":\"visa\",\"bank\":\"TEST BANK\"}}}",
+  "headers": {
+    "x-paystack-signature": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "expected": {
+    "signature_valid": false,
+    "event_id": null,
+    "event_type": null,
+    "gateway_reference": null,
+    "status": null,
+    "amount": null,
+    "currency": null
+  }
+}

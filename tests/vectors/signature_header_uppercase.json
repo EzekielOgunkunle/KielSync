@@ -1,0 +1,19 @@
+{
+  "name": "signature_header_uppercase",
+  "description": "HTTP header names are case-insensitive and servers normalise them differently. A genuine webhook must not be rejected over casing.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"charge.success\",\"data\":{\"id\":302961,\"domain\":\"test\",\"status\":\"success\",\"reference\":\"kiel_txn_0001\",\"amount\":500000,\"currency\":\"NGN\",\"gateway_response\":\"Successful\",\"paid_at\":\"2026-07-25T10:15:32.000Z\",\"channel\":\"card\",\"customer\":{\"email\":\"payer@example.com\",\"customer_code\":\"CUS_x1\"},\"authorization\":{\"authorization_code\":\"AUTH_conformance\",\"bin\":\"408408\",\"last4\":\"4081\",\"exp_month\":\"12\",\"exp_year\":\"2030\",\"card_type\":\"visa\",\"bank\":\"TEST BANK\"}}}",
+  "headers": {
+    "X-Paystack-Signature": "e3f56cab13156d00037024c296b6143e8a0b41ab63adb56428a876d355d82943b42e60a8a81f95e66781317e883515e7fe18e9366ce9e1a3e24d7a0b7426d6a5"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "charge.success:302961",
+    "event_type": "charge.success",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "refund_pending",
+  "description": "A refund Paystack has queued but not yet completed.",
+  "gateway": "paystack",
+  "secret_key": "sk_test_kielsync_conformance_vector_key",
+  "raw_body": "{\"event\":\"refund.pending\",\"data\":{\"id\":41002,\"status\":\"pending\",\"reference\":\"kiel_txn_0004\",\"amount\":100000,\"currency\":\"NGN\"}}",
+  "headers": {
+    "x-paystack-signature": "abf406e8a28c0f40a689d11ddcb57765219630609e2fa69f4bd4e554897ee151c2323716c1ba150d5f56ce381eb3614064898ea019d69772dd805270a2ba6060"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "refund.pending:41002",
+    "event_type": "refund.pending",
+    "gateway_reference": "kiel_txn_0004",
+    "status": "PENDING",
+    "amount": 100000,
+    "currency": "NGN"
+  }
+}
