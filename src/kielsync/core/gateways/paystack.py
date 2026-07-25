@@ -87,6 +87,20 @@ def _map_status(
     return table.get(raw_status.strip().lower(), PaymentStatus.PENDING)
 
 
+def _status_table_for(event_type: object) -> Mapping[str, PaymentStatus]:
+    """Pick the status table that applies to a webhook event.
+
+    Refund events reuse the ``status`` field for a different vocabulary:
+    a refund reports ``processed`` where a charge reports ``success``.
+    Reading a refund through the transaction table would report a
+    completed refund as still pending, so the event name selects the
+    table.
+    """
+    if isinstance(event_type, str) and event_type.strip().lower().startswith("refund"):
+        return _REFUND_STATUSES
+    return _TRANSACTION_STATUSES
+
+
 def _parse_timestamp(value: object) -> datetime | None:
     """Parse a Paystack ISO 8601 timestamp, tolerating absence and junk.
 
@@ -392,7 +406,7 @@ class PaystackGateway:
             event_id=_webhook_event_id(event_type, data),
             event_type=event_type if isinstance(event_type, str) else None,
             gateway_reference=reference if isinstance(reference, str) else None,
-            status=_map_status(data.get("status"), _TRANSACTION_STATUSES),
+            status=_map_status(data.get("status"), _status_table_for(event_type)),
             amount=_as_int(data.get("amount")),
             currency=currency if isinstance(currency, str) else None,
             raw=payload,
