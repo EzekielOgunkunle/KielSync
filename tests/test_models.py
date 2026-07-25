@@ -4,7 +4,7 @@ import pytest
 from django.db import IntegrityError
 from django.db import transaction as db_transaction
 
-from kielsync.models import PaymentAttempt, Transaction, WebhookEvent
+from kielsync.django.models import PaymentAttempt, Transaction, WebhookEvent
 
 pytestmark = pytest.mark.django_db
 

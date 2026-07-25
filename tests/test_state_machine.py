@@ -2,8 +2,8 @@ import uuid
 
 import pytest
 
-from kielsync.exceptions import InvalidTransition
-from kielsync.models import PaymentAttempt, Transaction
+from kielsync.core.exceptions import InvalidTransition
+from kielsync.django.models import PaymentAttempt, Transaction
 
 pytestmark = pytest.mark.django_db
 

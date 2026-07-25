@@ -2,8 +2,8 @@ import uuid
 
 from django.db import models
 
-from kielsync.exceptions import InvalidTransition
-from kielsync.state_machine import (
+from kielsync.core.exceptions import InvalidTransition
+from kielsync.core.states import (
     PAYMENT_ATTEMPT_TRANSITIONS,
     TRANSACTION_TRANSITIONS,
     perform_transition,

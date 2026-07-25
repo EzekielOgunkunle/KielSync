@@ -7,7 +7,7 @@ DEBUG = False
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
-    "kielsync",
+    "kielsync.django",
 ]
 
 DATABASES = {

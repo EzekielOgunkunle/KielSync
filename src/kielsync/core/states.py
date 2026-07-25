@@ -1,4 +1,4 @@
-from kielsync.exceptions import InvalidTransition
+from kielsync.core.exceptions import InvalidTransition
 
 TRANSACTION_TRANSITIONS = {
     "CREATED": {"PENDING"},

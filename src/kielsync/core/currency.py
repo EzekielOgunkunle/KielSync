@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
-from kielsync.exceptions import UnknownCurrency
+from kielsync.core.exceptions import UnknownCurrency
 
 CURRENCY_EXPONENTS = {
     "NGN": 2,

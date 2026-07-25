@@ -2,8 +2,8 @@ from decimal import Decimal
 
 import pytest
 
-from kielsync.currency import to_display, to_minor_units
-from kielsync.exceptions import UnknownCurrency
+from kielsync.core.currency import to_display, to_minor_units
+from kielsync.core.exceptions import UnknownCurrency
 
 
 def test_to_minor_units_ngn_with_decimals():
