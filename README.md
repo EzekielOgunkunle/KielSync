@@ -42,13 +42,16 @@ recognise is treated as terminal rather than retried.
 | Currency minor-unit conversion | Built |
 | `Gateway` protocol and result dataclasses | Built |
 | Paystack adapter (initialize, verify, refund, webhook parsing) | Built |
+| Flutterwave adapter (same, in major units) | Built |
 | Retryable/terminal error classification | Built |
 | Payload redaction for logs | Built |
-| Webhook conformance vectors | Built |
-| Flutterwave adapter | Not started |
-| Webhook HTTP endpoint | Not started |
-| Reconciliation sweeper | Not started |
-| Routing and gateway failover | Not started |
+| Webhook conformance vectors (both gateways) | Built |
+| Webhook endpoint with deduplication | Built |
+| Shared transaction resolution | Built |
+| Reconciliation sweeper (`kielsync_sweep`) | Built |
+| Routing and gateway failover | Not started (v0.2) |
+| Circuit breakers | Not started (v0.2) |
+| Reconciliation reporting | Not started (v0.3) |
 
 The error classifier exists ahead of the failover logic it is for,
 because retry policy is the thing that is expensive to get wrong later.
@@ -74,13 +77,48 @@ INSTALLED_APPS = [
 
 Then `python manage.py migrate`. The app label is `kielsync`.
 
+Mount the webhook receiver in your root URLconf:
+
+```python
+urlpatterns = [
+    path("kielsync/", include("kielsync.django.urls")),
+]
+```
+
+which serves `/kielsync/webhooks/<gateway>/`. Register that URL with each
+gateway's dashboard.
+
 Credentials come from the environment, never from your settings module:
 
 ```bash
 export KIELSYNC_PAYSTACK_SECRET_KEY="sk_live_..."
+export KIELSYNC_FLUTTERWAVE_SECRET_KEY="FLWSECK-..."
+export KIELSYNC_FLUTTERWAVE_WEBHOOK_HASH="..."
 ```
 
-## Using the Paystack adapter
+`KIELSYNC_FLUTTERWAVE_WEBHOOK_HASH` is the "secret hash" from
+Flutterwave's dashboard, which is a **different value** from the API
+secret key. Conflating them is a common misconfiguration whose only
+symptom is that every webhook fails authentication, which is why they are
+read from separate variables.
+
+Non-secret tuning goes in Django settings, where it is a normal
+deployment concern rather than a credential:
+
+```python
+KIELSYNC_SWEEP_AFTER_MINUTES = 20    # grace period before verifying
+KIELSYNC_ABANDON_AFTER_HOURS = 24    # write-off threshold
+KIELSYNC_SWEEP_BATCH_LIMIT = 100
+```
+
+Finally, put the sweeper on cron — it is not optional, and the section
+below explains why:
+
+```cron
+*/10 * * * * /path/to/python /path/to/manage.py kielsync_sweep
+```
+
+## Using an adapter
 
 ```python
 from kielsync.core.gateways.base import InitializeRequest
@@ -111,16 +149,31 @@ if verification.status is PaymentStatus.SUCCESS:
     ...
 ```
 
-`verify()` reports the amount and currency *Paystack* gives, not the ones
-you asked for. That is deliberate: comparing them is reconciliation work
-and needs the originating transaction, which the adapter does not have. A
-short payment is a mismatch for you to record, not an exception for the
-adapter to raise.
+`verify()` reports the amount and currency the *gateway* gives, not the
+ones you asked for. That is deliberate: comparing them is reconciliation
+work and needs the originating transaction, which the adapter does not
+have. A short payment is a mismatch for you to record, not an exception
+for the adapter to raise.
 
-Amounts are integers in the currency's minor unit throughout — kobo for
-NGN, cents for USD, and whole units for zero-exponent currencies like
-XOF. Nothing in the library converts them, so nothing can accidentally
-multiply or divide a real charge by a hundred. Convert at your own edges:
+Swapping `"PAYSTACK"` for `"FLUTTERWAVE"` above changes nothing else. The
+two APIs disagree about almost everything — including what a number
+means — and absorbing that is the adapters' entire job.
+
+### Amounts
+
+Amounts are integers in the currency's minor unit throughout KielSync —
+kobo for NGN, cents for USD, and whole units for zero-exponent currencies
+like XOF, which have no subunit at all.
+
+Paystack speaks minor units too, so that adapter never converts.
+Flutterwave's v3 API speaks **major** units: it takes `5000` to mean
+₦5,000 where Paystack takes `500000`. That conversion happens inside the
+adapter, in both directions, through the currency exponent table — never
+a hardcoded `/ 100`, which is wrong by a factor of a hundred across much
+of West Africa.
+
+Nothing outside `core/currency.py` does arithmetic on money. Convert at
+your own edges:
 
 ```python
 from kielsync.core.currency import to_minor_units, to_display
@@ -128,6 +181,12 @@ from kielsync.core.currency import to_minor_units, to_display
 to_minor_units("5000.00", "NGN")   # 500000
 to_display(500_000, "NGN")         # Decimal("5000.00")
 ```
+
+Conversion refuses to round. An amount carrying more precision than the
+currency can represent raises rather than quietly losing the remainder,
+because the amount a gateway reports is compared against the amount a
+transaction expects, and silently adjusting one side of that comparison
+would defeat the check that exists to catch exactly that discrepancy.
 
 ## Failure classification
 
@@ -167,45 +226,129 @@ and `insufficient_funds` land in the same place.
 
 ## Webhooks
 
-`parse_webhook` takes the raw request body as bytes and verifies the
-HMAC-SHA512 signature with `hmac.compare_digest` *before* parsing
-anything. A naive `==` on digests short-circuits at the first differing
+Mounting [`kielsync.django.urls`](src/kielsync/django/urls.py) gives you
+`/kielsync/webhooks/<gateway>/`, one URL per gateway. The order of
+operations inside is fixed, and each step is there because doing it later
+is a known way to lose money:
+
+1. Read the raw body as bytes, before anything parses it.
+2. Authenticate. Nothing is stored, parsed, or trusted until this passes.
+3. Deduplicate on `(gateway, event_id)`.
+4. **Call `verify()` independently.**
+5. Resolve under a `select_for_update` row lock.
+6. Return 200 once the event is durably stored.
+
+A rejected delivery returns 401 and **persists nothing** — storing
+unauthenticated payloads would turn a public URL into an unbounded write.
+A delivery already processed returns 200 immediately, without a second
+`verify()` call or a second state change.
+
+Step 4 is the one that matters. **The webhook is a notification, never a
+source of truth.** A payload claiming a successful ₦5,000 payment moves
+nothing until the gateway's own verification endpoint agrees, which is
+what makes tampering pointless.
+
+If processing fails, the endpoint still returns 200 with the event stored
+`processed=False`, and the sweeper retries it. Returning non-200 only
+asks the gateway to redeliver something that just failed
+deterministically, which is how a redelivery storm starts.
+
+### The two signature schemes are not equivalent
+
+Paystack signs the raw body with HMAC-SHA512, compared with
+`hmac.compare_digest`. A naive `==` short-circuits at the first differing
 byte, and that timing difference is enough for someone submitting
-repeated webhooks to recover a valid signature one byte at a time — which
-is the same as being able to forge payment notifications.
-
-```python
-result = gateway.parse_webhook(request.body, request.headers)
-
-if not result.signature_valid:
-    return HttpResponse(status=400)      # every other field is empty
-```
-
-The body must reach this call as the exact bytes received. A JSON
-round-trip on the way reorders keys and rewrites whitespace, and a
+repeated webhooks to recover a valid signature one byte at a time. A
+valid Paystack signature is evidence about the *payload*: change one byte
+and it stops verifying. The body must therefore arrive as the exact bytes
+received — a JSON round-trip reorders keys and rewrites whitespace, and a
 genuine signature will not survive it.
 
-When verification fails, every other field on the result is empty. An
-unauthenticated payload is never partially trusted, so a forged body
-cannot smuggle an amount or a reference through by being rejected in a
-way that still reports what it claimed.
+Flutterwave sends a static shared secret in a `verif-hash` header. It is
+the same value on every delivery and is not computed over the body at
+all, so it authenticates the *sender* and says precisely nothing about
+the contents. Anyone who has seen one valid header can replay it against
+any payload they like.
 
-Paystack sends no delivery identifier, so KielSync derives a
-deduplication key from the event name and the transaction id
-(`charge.success:302961`). The event name is included because one
-transaction legitimately produces several events, and keying on the
-transaction alone would drop the second as a duplicate of the first.
+That asymmetry is why step 4 is not optional. For Paystack the
+independent `verify()` call is defence in depth; for Flutterwave it is
+the only real defence.
+
+When authentication fails, every other field on the result is empty, so a
+forged body cannot smuggle an amount or a reference through by being
+rejected in a way that still reports what it claimed.
+
+### Deduplication
+
+Gateways retry, sometimes for days, so `WebhookEvent` is unique on
+`(gateway, event_id)` and that column has to carry a stable value.
+
+Paystack supplies a transaction id, so the key is the event name plus
+that id (`charge.success:302961`). Flutterwave supplies no delivery
+identifier at all, so KielSync derives one by hashing the event name, the
+subject id, and the status. Status is part of the key because a
+transaction reported pending and later successful is two events rather
+than a redelivery; the event name is part of it because one transaction
+legitimately produces a charge and later a refund, and keying on the
+transaction alone would swallow the second.
 
 ### Conformance vectors
 
-[`tests/vectors/`](tests/vectors/) holds 18 webhook deliveries paired
-with the exact result a correct implementation must produce, as
-standalone JSON data files rather than fixtures embedded in Python. They
-cover tampered bodies, missing, empty, truncated and non-ASCII signature
-headers, and bodies that authenticate but do not decode. The intent is
-that a second implementation — in another language, or your own — can be
-checked against them without porting any test code. See the
+[`tests/vectors/`](tests/vectors/) holds 36 webhook deliveries — 18 per
+gateway — paired with the exact result a correct implementation must
+produce, as standalone JSON data files rather than fixtures embedded in
+Python. They cover tampered bodies, missing, empty, truncated and
+non-ASCII authentication headers, zero-exponent currency amounts, and
+bodies that authenticate but do not decode. The intent is that a second
+implementation — in another language, or your own — can be checked
+against them without porting any test code. See the
 [format documentation](tests/vectors/README.md).
+
+One vector is deliberately counterintuitive:
+`flutterwave_tampered_body_still_authenticates` carries an absurd forged
+amount and expects `signature_valid: true`. That is not a mistake — it is
+the executable statement of the weakness described above.
+
+## Resolution and the sweeper
+
+Every path that decides a payment's outcome ends in one function,
+[`resolve_transaction`](src/kielsync/django/services.py). The webhook
+handler calls it; the sweeper calls it; nothing else is allowed to mark a
+transaction successful. Two code paths deciding the same thing is how
+reconciliation bugs are born — they start identical, then one gets a fix
+the other does not.
+
+It compares the verified amount and currency against what the transaction
+expects. **On any mismatch it does not mark success:**
+`reconciliation_status` becomes `MISMATCHED`, the payment status is left
+exactly as it was, and the discrepancy is logged at error level. A
+payment that succeeded for the wrong amount is not a successful payment,
+and deciding what to do about it needs a human. The function is
+idempotent and never raises, from any combination of stored and reported
+state, because a handler that raises becomes a redelivery storm.
+
+### Why the sweeper is mandatory
+
+Webhooks get lost. The gateway's retries give up, your endpoint is down
+during the window, a deploy drops the request. Any integration that
+treats webhooks as reliable eventually has customers who paid and were
+never credited, and no way to find them.
+
+```bash
+python manage.py kielsync_sweep [--dry-run] [--gateway PAYSTACK] [--limit 100]
+```
+
+It asks the gateway directly about every payment still open: transactions
+sitting in `PENDING` past the grace period, and webhook events stored
+`processed=False`. Runs are bounded, ordered oldest first so nothing
+starves under the batch limit, and locked with `skip_locked` so
+overlapping cron runs cannot collide. No single item can abort the batch.
+
+Transactions still pending past `KIELSYNC_ABANDON_AFTER_HOURS` are marked
+`ABANDONED` — but only *after* verification, so a payment that settles at
+hour 25 is rescued rather than written off.
+
+Each run prints `examined / resolved / mismatched / abandoned / errored`.
 
 ## Architecture
 
@@ -213,14 +356,21 @@ The package is split in two, and the dependency runs one way only.
 
 ```
 src/kielsync/
-├── core/          pure Python — zero Django imports
-│   ├── gateways/  base.py (protocol + dataclasses), paystack.py
-│   ├── errors.py  classify() and the GatewayError hierarchy
-│   ├── states.py  transition tables
-│   ├── currency.py
-│   ├── logging.py redact()
+├── core/            pure Python — zero Django imports
+│   ├── gateways/    base.py (protocol + dataclasses)
+│   │                paystack.py, flutterwave.py
+│   ├── errors.py    classify() and the GatewayError hierarchy
+│   ├── states.py    transition tables
+│   ├── currency.py  minor/major unit conversion
+│   ├── webhooks.py  derived deduplication ids
+│   ├── logging.py   redact()
 │   └── exceptions.py
-└── django/        models, app config, migrations, settings
+└── django/          models, migrations, app config
+    ├── settings.py  the only module that reads os.environ
+    ├── services.py  resolve_transaction() — the single decision point
+    ├── views.py     the webhook receiver
+    ├── urls.py
+    └── management/commands/kielsync_sweep.py
 ```
 
 Adapters never accept or return model instances; they exchange frozen
