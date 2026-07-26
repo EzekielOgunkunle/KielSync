@@ -25,15 +25,26 @@ from collections.abc import Callable
 
 from kielsync.core.exceptions import ConfigurationError
 from kielsync.core.gateways.base import Gateway
+from kielsync.core.gateways.flutterwave import FlutterwaveGateway
 from kielsync.core.gateways.paystack import PaystackGateway
 
 __all__ = [
+    "FLUTTERWAVE_SECRET_KEY_ENV",
+    "FLUTTERWAVE_WEBHOOK_HASH_ENV",
     "PAYSTACK_SECRET_KEY_ENV",
+    "get_flutterwave_secret_key",
     "get_gateway",
     "get_paystack_secret_key",
 ]
 
 PAYSTACK_SECRET_KEY_ENV = "KIELSYNC_PAYSTACK_SECRET_KEY"
+FLUTTERWAVE_SECRET_KEY_ENV = "KIELSYNC_FLUTTERWAVE_SECRET_KEY"
+
+# Flutterwave's webhook shared secret is a *different* value from its API
+# secret key, set separately in the dashboard. Conflating the two is a
+# common misconfiguration whose only symptom is that every webhook fails
+# authentication, so they are read from separate variables.
+FLUTTERWAVE_WEBHOOK_HASH_ENV = "KIELSYNC_FLUTTERWAVE_WEBHOOK_HASH"
 
 
 def _require_env(name: str) -> str:
@@ -56,12 +67,37 @@ def get_paystack_secret_key() -> str:
     return _require_env(PAYSTACK_SECRET_KEY_ENV)
 
 
+def get_flutterwave_secret_key() -> str:
+    """Read the Flutterwave API secret key from the environment."""
+    return _require_env(FLUTTERWAVE_SECRET_KEY_ENV)
+
+
+def get_flutterwave_webhook_hash() -> str | None:
+    """Read Flutterwave's webhook shared secret from the environment.
+
+    Unlike the API key this is allowed to be absent, because an
+    integration may legitimately not receive Flutterwave webhooks at all.
+    When it is absent the adapter rejects every webhook rather than
+    accepting unauthenticated ones, so the failure is safe and visible.
+    """
+    value = os.environ.get(FLUTTERWAVE_WEBHOOK_HASH_ENV, "")
+    return value or None
+
+
 def _build_paystack() -> Gateway:
     return PaystackGateway(secret_key=get_paystack_secret_key())
 
 
+def _build_flutterwave() -> Gateway:
+    return FlutterwaveGateway(
+        secret_key=get_flutterwave_secret_key(),
+        webhook_secret_hash=get_flutterwave_webhook_hash(),
+    )
+
+
 _BUILDERS: dict[str, Callable[[], Gateway]] = {
     "PAYSTACK": _build_paystack,
+    "FLUTTERWAVE": _build_flutterwave,
 }
 
 

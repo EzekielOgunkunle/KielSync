@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_xof_zero_exponent",
+  "description": "XOF has no subunit, so 5000 on the wire is 5000 minor units, not 500000. The single most likely place for a hardcoded x100 to be wrong, and the reason conversion goes through the exponent table.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234570,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"successful\",\"amount\":5000,\"currency\":\"XOF\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:charge.completed:779b02f2ea7e9deb2409ba83576d0d3f",
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 5000,
+    "currency": "XOF"
+  }
+}

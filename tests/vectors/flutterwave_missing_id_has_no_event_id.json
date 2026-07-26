@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_missing_id_has_no_event_id",
+  "description": "With no data.id there is nothing stable to key deduplication on, so event_id is null. The caller must decide whether to store the event rather than have a random id invented for it.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"tx_ref\":\"kiel_txn_0002\",\"status\":\"successful\",\"amount\":5000,\"currency\":\"NGN\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": null,
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0002",
+    "status": "SUCCESS",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

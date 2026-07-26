@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_sub_minor_precision_amount",
+  "description": "An amount with more precision than NGN can represent. Reported as a missing amount rather than a rounded one: a rounded value would silently pass the reconciliation comparison it should fail.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234572,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"successful\",\"amount\":\"5000.005\",\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:charge.completed:527a1c0e139a39c7d6e48861ee4c64f7",
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": null,
+    "currency": "NGN"
+  }
+}

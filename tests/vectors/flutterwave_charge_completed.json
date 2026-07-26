@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_charge_completed",
+  "description": "A genuine successful charge. The NGN amount arrives in major units (5000) and must be reported in minor units (500000).",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234567,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"successful\",\"amount\":5000,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:charge.completed:c70d6e68adebec763e9dd0cb8928a9d3",
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

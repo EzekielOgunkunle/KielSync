@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_header_case_insensitive",
+  "description": "HTTP header names are case-insensitive and servers normalise them differently. A genuine webhook must not be rejected over casing.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234567,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"successful\",\"amount\":5000,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "Verif-Hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:charge.completed:c70d6e68adebec763e9dd0cb8928a9d3",
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

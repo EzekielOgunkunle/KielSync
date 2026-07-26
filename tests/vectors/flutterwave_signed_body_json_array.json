@@ -1,0 +1,14 @@
+{
+  "name": "flutterwave_signed_body_json_array",
+  "description": "Valid JSON, but not an object. Same treatment as unparseable.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "[\"charge.completed\"]",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "raises": "TerminalGatewayError"
+  }
+}

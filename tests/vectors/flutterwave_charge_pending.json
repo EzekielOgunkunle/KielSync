@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_charge_pending",
+  "description": "A charge Flutterwave has not resolved yet. Distinct from the successful event on the same transaction, and must therefore derive a different event id.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234569,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"pending\",\"amount\":5000,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:charge.completed:d65538fc9fdd32c86fd7c3e4228adf1d",
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "PENDING",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

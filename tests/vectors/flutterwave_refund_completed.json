@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_refund_completed",
+  "description": "Refunds reuse the status field with a different vocabulary: a finished refund says 'completed' where a finished charge says 'successful'. Reading this through the transaction table would report a completed refund as still pending — the Night 2 bug.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"refund.completed\",\"data\":{\"id\":98001,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"completed\",\"amount\":5000,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:refund.completed:f655b960edfa411c44b25fcf957704a3",
+    "event_type": "refund.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

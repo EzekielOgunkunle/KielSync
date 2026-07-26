@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_refund_pending",
+  "description": "A refund Flutterwave has queued but not completed.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"refund.completed\",\"data\":{\"id\":98002,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"pending\",\"amount\":5000,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:refund.completed:a72f787c97b6d2c47a41b3903a860f20",
+    "event_type": "refund.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "PENDING",
+    "amount": 500000,
+    "currency": "NGN"
+  }
+}

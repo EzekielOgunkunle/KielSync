@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_verif_hash_prefix_only",
+  "description": "A prefix of the real secret. compare_digest must reject it without leaking, through timing, how much of it was right.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234567,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"successful\",\"amount\":5000,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-confor"
+  },
+  "expected": {
+    "signature_valid": false,
+    "event_id": null,
+    "event_type": null,
+    "gateway_reference": null,
+    "status": null,
+    "amount": null,
+    "currency": null
+  }
+}

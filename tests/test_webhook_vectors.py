@@ -20,6 +20,7 @@ import pytest
 
 from kielsync.core.errors import RetryableGatewayError, TerminalGatewayError
 from kielsync.core.gateways.base import PaymentStatus, WebhookParseResult
+from kielsync.core.gateways.flutterwave import FlutterwaveGateway
 from kielsync.core.gateways.paystack import PaystackGateway
 
 VECTOR_DIR = pathlib.Path(__file__).parent / "vectors"
@@ -48,24 +49,38 @@ def load_vectors():
 
 
 VECTORS = load_vectors()
+PAYSTACK_VECTORS = [v for v in VECTORS if v["gateway"] == "paystack"]
+FLUTTERWAVE_VECTORS = [v for v in VECTORS if v["gateway"] == "flutterwave"]
 
 
 def vector_id(vector):
     return vector["name"]
 
 
+def _build_gateway(vector):
+    """Construct the adapter a vector is addressed to.
+
+    ``parse_webhook`` does no I/O, so no transport is needed. Each vector
+    carries the credentials its headers were built against, which is what
+    keeps the files self-contained and portable to another
+    implementation.
+    """
+    if vector["gateway"] == "paystack":
+        return PaystackGateway(vector["secret_key"])
+    if vector["gateway"] == "flutterwave":
+        return FlutterwaveGateway(
+            vector["secret_key"],
+            webhook_secret_hash=vector["webhook_secret_hash"],
+        )
+    raise AssertionError(f"no adapter for gateway {vector['gateway']!r}")
+
+
 @pytest.fixture
 def gateway_for():
-    """Build an adapter keyed on a vector's own secret, and close it after.
-
-    parse_webhook does no I/O, so no transport is needed. The vector
-    carries the key its signature was computed with, which keeps each
-    file self-contained.
-    """
     built = []
 
     def factory(vector):
-        gateway = PaystackGateway(vector["secret_key"])
+        gateway = _build_gateway(vector)
         built.append(gateway)
         return gateway
 
@@ -100,15 +115,30 @@ class TestVectorFilesThemselves:
         else:
             assert set(expected) == set(RESULT_FIELDS)
 
+    def test_both_gateways_are_represented(self):
+        assert len(PAYSTACK_VECTORS) >= 10
+        assert len(FLUTTERWAVE_VECTORS) >= 10
+
     @pytest.mark.parametrize("vector", VECTORS, ids=vector_id)
     def test_no_vector_carries_a_plausible_live_key(self, vector):
         """Conformance vectors get published. A key that looks real must
-        never be one, so the fixtures use an unmistakably fake value."""
-        assert vector["secret_key"].startswith("sk_test_")
-        assert "kielsync" in vector["secret_key"]
+        never be one, so the fixtures use unmistakably fake values in
+        each gateway's own test-key format."""
+        secret = vector["secret_key"]
+        assert secret.startswith(("sk_test_", "FLWSECK_TEST-"))
+        assert "kielsync" in secret
+        if vector["gateway"] == "flutterwave":
+            assert "kielsync" in vector["webhook_secret_hash"]
+
+    @pytest.mark.parametrize("vector", FLUTTERWAVE_VECTORS, ids=vector_id)
+    def test_flutterwave_vectors_declare_a_webhook_hash(self, vector):
+        """The verif-hash secret is a different value from the API key,
+        and the vector has to carry both to be self-contained."""
+        assert vector["webhook_secret_hash"]
+        assert vector["webhook_secret_hash"] != vector["secret_key"]
 
 
-@pytest.mark.parametrize("vector", VECTORS, ids=vector_id)
+@pytest.mark.parametrize("vector", PAYSTACK_VECTORS, ids=vector_id)
 def test_vector_signature_matches_its_declared_expectation(vector):
     """Check the fixtures against a signature computed here, independently
     of the adapter. A vector whose signature silently stopped matching its
@@ -131,6 +161,52 @@ def test_vector_signature_matches_its_declared_expectation(vector):
         assert supplied.lower() == expected_digest
     else:
         assert supplied is None or supplied.lower() != expected_digest
+
+
+@pytest.mark.parametrize("vector", FLUTTERWAVE_VECTORS, ids=vector_id)
+def test_flutterwave_vector_header_matches_its_declared_expectation(vector):
+    """The Flutterwave equivalent of the signature check above, done
+    independently of the adapter so a vector cannot drift into asserting
+    nothing.
+
+    Note how much simpler this is than the Paystack version, and why that
+    is bad news rather than good: there is no digest to recompute because
+    the header is just the shared secret, byte for byte, on every
+    delivery. A vector verifies exactly when its header equals the
+    configured hash — the body is not an input at all.
+    """
+    supplied = None
+    for name, value in vector["headers"].items():
+        if name.lower() == "verif-hash":
+            supplied = value
+
+    should_verify = vector["expected"].get("signature_valid") is True or (
+        "raises" in vector["expected"]
+    )
+    if should_verify:
+        assert supplied == vector["webhook_secret_hash"]
+    else:
+        assert supplied != vector["webhook_secret_hash"]
+
+
+def test_the_tampered_flutterwave_vector_authenticates_on_purpose():
+    """A vector that would look like a mistake without this assertion.
+
+    flutterwave_tampered_body_still_authenticates carries a forged amount
+    and expects signature_valid=True, because verif-hash says nothing
+    about the body. It is in the set deliberately, as the executable
+    statement of why the webhook handler cannot trust a payload even
+    after authentication succeeds.
+    """
+    tampered = [
+        v
+        for v in FLUTTERWAVE_VECTORS
+        if v["name"] == "flutterwave_tampered_body_still_authenticates"
+    ]
+    assert len(tampered) == 1
+    vector = tampered[0]
+    assert vector["expected"]["signature_valid"] is True
+    assert vector["expected"]["amount"] == 9_999_999_900
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=vector_id)

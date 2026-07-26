@@ -4,8 +4,11 @@ import pytest
 
 from kielsync.core.exceptions import ConfigurationError
 from kielsync.core.gateways.base import Gateway
+from kielsync.core.gateways.flutterwave import FlutterwaveGateway
 from kielsync.core.gateways.paystack import PaystackGateway
 from kielsync.django.settings import (
+    FLUTTERWAVE_SECRET_KEY_ENV,
+    FLUTTERWAVE_WEBHOOK_HASH_ENV,
     PAYSTACK_SECRET_KEY_ENV,
     get_gateway,
     get_paystack_secret_key,
@@ -17,6 +20,55 @@ def paystack_key(monkeypatch):
     key = "sk_test_kielsync_factory"
     monkeypatch.setenv(PAYSTACK_SECRET_KEY_ENV, key)
     return key
+
+
+@pytest.fixture
+def flutterwave_env(monkeypatch):
+    monkeypatch.setenv(FLUTTERWAVE_SECRET_KEY_ENV, "FLWSECK_TEST-kielsync-factory")
+    monkeypatch.setenv(FLUTTERWAVE_WEBHOOK_HASH_ENV, "kielsync-test-verif-hash")
+    return "FLWSECK_TEST-kielsync-factory", "kielsync-test-verif-hash"
+
+
+class TestFlutterwaveConstruction:
+    def test_builds_a_configured_flutterwave_adapter(self, flutterwave_env):
+        secret, webhook_hash = flutterwave_env
+        gateway = get_gateway("FLUTTERWAVE")
+        try:
+            assert isinstance(gateway, FlutterwaveGateway)
+            assert isinstance(gateway, Gateway)
+            assert gateway._secret_key == secret
+            assert gateway._webhook_secret_hash == webhook_hash
+        finally:
+            gateway.close()
+
+    def test_missing_api_key_raises(self, monkeypatch):
+        monkeypatch.delenv(FLUTTERWAVE_SECRET_KEY_ENV, raising=False)
+        with pytest.raises(ConfigurationError):
+            get_gateway("FLUTTERWAVE")
+
+    def test_webhook_hash_is_optional_but_api_key_is_not(self, monkeypatch):
+        """An integration may take Flutterwave payments without receiving
+        its webhooks. A missing hash makes the adapter reject every
+        webhook rather than accept unauthenticated ones."""
+        monkeypatch.setenv(FLUTTERWAVE_SECRET_KEY_ENV, "FLWSECK_TEST-x")
+        monkeypatch.delenv(FLUTTERWAVE_WEBHOOK_HASH_ENV, raising=False)
+        gateway = get_gateway("FLUTTERWAVE")
+        try:
+            assert gateway._webhook_secret_hash is None
+            assert gateway.parse_webhook(
+                b'{"event":"charge.completed"}', {"verif-hash": "anything"}
+            ).signature_valid is False
+        finally:
+            gateway.close()
+
+    def test_neither_credential_appears_in_the_repr(self, flutterwave_env):
+        secret, webhook_hash = flutterwave_env
+        gateway = get_gateway("FLUTTERWAVE")
+        try:
+            assert secret not in repr(gateway)
+            assert webhook_hash not in repr(gateway)
+        finally:
+            gateway.close()
 
 
 class TestSecretKeyReading:
@@ -69,7 +121,7 @@ class TestGetGateway:
         finally:
             gateway.close()
 
-    @pytest.mark.parametrize("name", ["stripe", "", "FLUTTERWAVE"])
+    @pytest.mark.parametrize("name", ["stripe", "", "mpesa"])
     def test_an_unregistered_gateway_raises(self, paystack_key, name):
         with pytest.raises(ConfigurationError):
             get_gateway(name)

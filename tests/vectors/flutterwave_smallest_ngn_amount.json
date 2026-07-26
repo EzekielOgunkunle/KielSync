@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_smallest_ngn_amount",
+  "description": "One kobo. Exercises the bottom of the NGN conversion range, where a float round trip would be most visible.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234571,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"successful\",\"amount\":0.01,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:charge.completed:4e805f61ed99fac16c463fc9cb374290",
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 1,
+    "currency": "NGN"
+  }
+}

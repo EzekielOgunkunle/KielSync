@@ -1,0 +1,20 @@
+{
+  "name": "flutterwave_tampered_body_still_authenticates",
+  "description": "THE IMPORTANT ONE. Flutterwave's verif-hash is a static shared secret, not an HMAC over the body, so this forged amount authenticates exactly as well as the honest one. signature_valid is true and the reported amount is the attacker's. This is why the webhook handler must call verify() independently and treat the payload as a notification rather than as evidence.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "{\"event\":\"charge.completed\",\"data\":{\"id\":1234567,\"tx_ref\":\"kiel_txn_0001\",\"status\":\"successful\",\"amount\":99999999,\"currency\":\"NGN\",\"created_at\":\"2026-07-26T10:15:32.000Z\"}}",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "signature_valid": true,
+    "event_id": "d:charge.completed:c70d6e68adebec763e9dd0cb8928a9d3",
+    "event_type": "charge.completed",
+    "gateway_reference": "kiel_txn_0001",
+    "status": "SUCCESS",
+    "amount": 9999999900,
+    "currency": "NGN"
+  }
+}

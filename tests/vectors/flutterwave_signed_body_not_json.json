@@ -1,0 +1,14 @@
+{
+  "name": "flutterwave_signed_body_not_json",
+  "description": "The header authenticates, so the sender is legitimate, but the body is not JSON. A malformed delivery from a trusted sender is an error rather than a rejection.",
+  "gateway": "flutterwave",
+  "secret_key": "FLWSECK_TEST-kielsync-conformance-vector-key",
+  "webhook_secret_hash": "kielsync-conformance-verif-hash",
+  "raw_body": "charge.completed but not JSON",
+  "headers": {
+    "verif-hash": "kielsync-conformance-verif-hash"
+  },
+  "expected": {
+    "raises": "TerminalGatewayError"
+  }
+}
