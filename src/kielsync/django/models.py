@@ -112,6 +112,11 @@ class WebhookEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     gateway = models.CharField(max_length=16, choices=PaymentAttempt.Gateway.choices)
     event_id = models.CharField(max_length=128)
+    # The reference the event is about, denormalised out of the payload so
+    # the sweeper can find an unprocessed event's transaction without
+    # re-parsing a gateway-specific body it no longer has the raw bytes
+    # or signature for.
+    gateway_reference = models.CharField(max_length=128, blank=True, db_index=True)
     payload = models.JSONField()
     signature_valid = models.BooleanField(default=False)
     processed = models.BooleanField(default=False)
